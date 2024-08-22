@@ -1,0 +1,17 @@
+version: "3.7"
+services:
+  base:
+    build:
+      context: .
+      dockerfile: ./dockerfile
+    image: base
+
+  candyscanner:
+    image: base
+    container_name: candyscanner
+    depends_on:
+      - base
+    env_file:
+      - ./source/sunswap_list/.env
+    restart: unless-stopped
+    entrypoint: ["npx", "ts-node-dev", "main.ts"]
