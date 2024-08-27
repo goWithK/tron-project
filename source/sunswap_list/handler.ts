@@ -116,7 +116,7 @@ export class DeployBotHandler implements IBotCommand {
             for (let i=0; i < holders.length; i++) {
                 if (holders[i]?.holder_address == devAddress){
                     let creatorHold = Number(holders[i]?.balance)/Number(tokenTotalSupply)*100;
-                    holderPercs[`${devAddress} - Creator`] = creatorHold.toFixed(2);
+                    holderPercs[`${devAddress} - Creator`] = `Creator - ${creatorHold.toFixed(2)}`;
                     totalHolds += creatorHold;
                 } else if (holders[i]?.holder_address !== pairAddress) {
                     let hold = Number(holders[i]?.balance)/Number(tokenTotalSupply)*100;

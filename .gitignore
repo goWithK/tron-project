@@ -1,3 +1,5 @@
 /node_modules
 tronDev.ts
 *.env
+*test.json
+.DS_Store
