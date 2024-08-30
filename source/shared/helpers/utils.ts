@@ -9,6 +9,7 @@ var tronWeb = new TronWeb({
     fullHost: 'https://api.trongrid.io',
     //headers: { "TRON-PRO-API-KEY": tronScanKey },
 });
+tronWeb.setAddress('TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t');
 
 export const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
