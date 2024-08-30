@@ -4,6 +4,7 @@ import { TronScanAPI } from "../shared/apis/tronscan.api";
 import TronWeb from 'tronweb';
 import { Message } from "./message";
 import { TimeHelper } from "../shared/helpers/time.helper";
+import {getTokenName, getTokenSymbol, getTokenDecimal, getTokenSupply, getCreateTokenTxn, getInitialBought} from "../shared/helpers/utils"
 import { BotContext, IBotCommand } from "../shared/type";
 import { Bot } from "grammy";
 import { ParseModeFlavor } from "@grammyjs/parse-mode";
@@ -81,32 +82,26 @@ export class DeployBotHandler implements IBotCommand {
     private async _startSendingMessages(chatId: any, ctx: any, bot: any, contractAddress: string, resp: any): Promise<void> {    
         const pairAddress = this._web3.address.fromHex(resp[0]?.result['2']);
         const txnHash = resp[0]?.transaction;
-        const data = await TronScanAPI.getTxnInfo(txnHash);
-        var tokenDecimal: number = 0;
-        if (!(data.hasOwnProperty('trc20TransferInfo'))){
-            return 
-        }
 
-        for (let i=0; i < data?.trc20TransferInfo.length; i++){
-            if (data?.trc20TransferInfo[i]?.symbol !== 'WTRX' && data?.trc20TransferInfo[i]?.symbol !== 'UNI-V2') {
-                tokenDecimal = data?.trc20TransferInfo[i]?.decimals
-            }
-        }
-
-        // await TimeHelper.delay(0.5);
-        const tokenInfo: any = await TronScanAPI.getTokenInfo(contractAddress);
-        const tokenName:string = tokenInfo?.trc20_tokens[0]?.name;
-        const tokenSymbol:string = tokenInfo?.trc20_tokens[0]?.symbol;
-        const tokenTotalSupply: any = tokenInfo?.trc20_tokens[0]?.total_supply_with_decimals;
+        const tokenName = await getTokenName(contractAddress);
+        const tokenSymbol = await getTokenSymbol(contractAddress);
+        const tokenSupply = await getTokenSupply(contractAddress);
+        const tokenDecimal = await getTokenDecimal(contractAddress);
         if (tokenName) {
             // const dataPool = new ScannerDataPool(txnHash, contractAddress, pairAddress, tokenDecimal);
             // const message = new Message(dataPool, ctx);
             // const msgContent = await message.getMsgContent();
 
-
             const contractInfo = await TronScanAPI.getContractInfo(contractAddress)
             const devAddress = contractInfo?.data[0]?.creator?.address;
             const createdTime = contractInfo?.data[0]?.date_created;
+
+            //get initial bought
+            const transactions = await TronScanAPI.getTxByAddress(devAddress);
+            const transactionsData = transactions?.data;
+            const createTxn = await getCreateTokenTxn(transactionsData);
+            const initialBought = await getInitialBought(createTxn, devAddress, contractAddress)
+            const initialBoughtPerc = (initialBought['amount_in_token']*100/tokenSupply).toFixed(2)
 
             const holderData = await TronScanAPI.getTokenHolder(contractAddress);
             const holders = holderData?.trc20_tokens;
@@ -115,11 +110,11 @@ export class DeployBotHandler implements IBotCommand {
 
             for (let i=0; i < holders.length; i++) {
                 if (holders[i]?.holder_address == devAddress){
-                    let creatorHold = Number(holders[i]?.balance)/Number(tokenTotalSupply)*100;
+                    let creatorHold = Number(holders[i]?.balance)/Number(tokenSupply)*100;
                     holderPercs[`${devAddress} - Creator`] = `Creator - ${creatorHold.toFixed(2)}`;
                     totalHolds += creatorHold;
                 } else if (holders[i]?.holder_address !== pairAddress) {
-                    let hold = Number(holders[i]?.balance)/Number(tokenTotalSupply)*100;
+                    let hold = Number(holders[i]?.balance)/Number(tokenSupply)*100;
                     holderPercs[holders[i]?.holder_address] = hold.toFixed(2);
                     totalHolds += hold;
                 } 
@@ -129,17 +124,20 @@ export class DeployBotHandler implements IBotCommand {
             let title = ctx.emoji`${"bullseye"}<a href="https://tronscan.org/#/token20/${contractAddress}">${tokenName} | ${tokenSymbol}</a>\n\n`
             //CA
             let line1msg = ctx.emoji`${"money_bag"} <b>CA:</b> <code>${contractAddress}</code> \n\n`;
+            //Dev Stats
+            let line2msg = `<b>Dev Address:</b> <code>${devAddress}</code> \n` 
+                            + `<b>Dev Bought: ${initialBought['amount_in_trx']} (${initialBoughtPerc}%)</b> \n\n`;
             //Total Hold
-            let line2msg = `<b>Top 10 hold:</b> ${totalHolds.toFixed(2)}%\n`;
+            let line3msg = `<b>Top 10 hold:</b> ${totalHolds.toFixed(2)}%\n`;
             //Each holder
             let list_msg: any = [];
             let holderAddress: any = Object.keys(holderPercs);
             for (let i = 0; i < holderAddress.length; i++) {
                 list_msg.push(`${holderPercs[holderAddress[i]]}%`)
             }
-            let line3msg = '<b>Holders:</b> \n' + list_msg.join(' | ')
+            let line4msg = '<b>Holders:</b> \n' + list_msg.join(' | ')
             
-            let msgContent = title + line1msg + line2msg + line3msg;
+            let msgContent = title + line1msg + line2msg + line3msg + line4msg;
             if (msgContent != '') {
                 await bot.api.sendMessage(
                     chatId,
