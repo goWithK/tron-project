@@ -20,6 +20,7 @@ export class DeployBotHandler implements IBotCommand {
             fullHost: 'https://api.trongrid.io',
             //headers: { "TRON-PRO-API-KEY": tronScanKey },
         });
+        this._web3.setAddress('TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t')
     }
 
     public registerStartCommand(bot: Bot<ParseModeFlavor<BotContext>>): void {
@@ -54,7 +55,7 @@ export class DeployBotHandler implements IBotCommand {
                 
             }
             catch (e) {
-                console.error(e);
+                console.error('Error when getting event', e);
                 continue
             }
         }
@@ -126,7 +127,7 @@ export class DeployBotHandler implements IBotCommand {
             let line1msg = ctx.emoji`${"money_bag"} <b>CA:</b> <code>${contractAddress}</code> \n\n`;
             //Dev Stats
             let line2msg = `<b>Dev Address:</b> <code>${devAddress}</code> \n` 
-                            + `<b>Dev Bought: ${initialBought['amount_in_trx']} (${initialBoughtPerc}%)</b> \n\n`;
+                            + `<b>Dev Bought: ${initialBought['amount_in_trx']}TRX (${initialBoughtPerc}%)</b> \n\n`;
             //Total Hold
             let line3msg = `<b>Top 10 hold:</b> ${totalHolds.toFixed(2)}%\n`;
             //Each holder
