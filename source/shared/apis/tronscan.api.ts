@@ -42,4 +42,18 @@ export class TronScanAPI {
           })
         return resp.json();
     }
+
+    public static async getTrc20BuyByPair(pairAddress: string, contractAddress: string) {
+        const url = `https://api.trongrid.io/v1/accounts/${pairAddress}/transactions/trc20?only_confirmed=true&contract_address=${contractAddress}&only_from=true`
+    
+        const resp = await fetch(url)
+        return resp.json();
+    }
+
+    public static async getTxByAddress(address: string) {
+        const url = `https://api.trongrid.io/v1/accounts/${address}/transactions?only_confirmed=true&only_from=true&order_by=block_timestamp%2Casc&search_internal=false`;
+    
+        const resp = await fetch(url)
+        return resp.json();
+    }
 }
